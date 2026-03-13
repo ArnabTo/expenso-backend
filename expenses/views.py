@@ -1,9 +1,12 @@
 from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Q
+from django.db.models import Q, F
+from django.contrib.auth import get_user_model
 from .models import Category, Expense
 from .serializers import CategorySerializer, ExpenseSerializer
+
+User = get_user_model()
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -29,7 +32,8 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     ordering = ['-date']
 
     def get_queryset(self):
-        queryset = Expense.objects.filter(user=self.request.user).select_related('category')
+        queryset = Expense.objects.filter(
+            user=self.request.user).select_related('category')
         # Filter by date range
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
@@ -50,4 +54,22 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        expense = serializer.save(user=self.request.user)
+        User.objects.filter(pk=self.request.user.pk).update(
+            bank_balance=F('bank_balance') - expense.amount
+        )
+
+    def perform_update(self, serializer):
+        old_amount = serializer.instance.amount
+        expense = serializer.save()
+        diff = expense.amount - old_amount
+        if diff != 0:
+            User.objects.filter(pk=self.request.user.pk).update(
+                bank_balance=F('bank_balance') - diff
+            )
+
+    def perform_destroy(self, instance):
+        User.objects.filter(pk=self.request.user.pk).update(
+            bank_balance=F('bank_balance') + instance.amount
+        )
+        instance.delete()

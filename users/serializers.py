@@ -10,12 +10,14 @@ class UserCreateSerializer(BaseUserCreateSerializer):
 
     class Meta(BaseUserCreateSerializer.Meta):
         model = User
-        fields = ('id', 'email', 'username', 'password', 're_password', 'currency')
+        fields = ('id', 'email', 'username',
+                  'password', 're_password', 'currency')
         extra_kwargs = {'password': {'write_only': True}}
 
     def validate(self, attrs):
         if attrs.get('password') != attrs.pop('re_password', None):
-            raise serializers.ValidationError({'re_password': 'Passwords do not match.'})
+            raise serializers.ValidationError(
+                {'re_password': 'Passwords do not match.'})
         return attrs
 
 
@@ -23,5 +25,6 @@ class UserSerializer(BaseUserSerializer):
     """Serializer for reading user profile."""
     class Meta(BaseUserSerializer.Meta):
         model = User
-        fields = ('id', 'email', 'username', 'currency', 'bio', 'created_at')
+        fields = ('id', 'email', 'username', 'currency',
+                  'bio', 'bank_balance', 'created_at')
         read_only_fields = ('id', 'email', 'created_at')

@@ -6,6 +6,7 @@ from expenses.models import Expense
 from budgets.models import Budget
 from savings.models import SavingsTransaction
 
+
 class MonthlyReportView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -38,11 +39,13 @@ class MonthlyReportView(APIView):
                 "total_expenses": float(expenses_total),
                 "total_budgeted": float(budget_total),
                 "total_saved": float(savings_total),
+                "bank_balance": float(request.user.bank_balance),
                 "budget_utilized_percentage": round(
                     (float(expenses_total) / float(budget_total) * 100), 1
                 ) if budget_total else 0
             }
         })
+
 
 class YearlyReportView(APIView):
     permission_classes = [IsAuthenticated]
